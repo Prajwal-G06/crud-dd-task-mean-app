@@ -14,14 +14,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ Checkout repo
-      - name: Checkout
+      # ✅ Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ✅ Setup buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ✅ Docker login
+      # ✅ Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -30,21 +31,32 @@ jobs:
 
       # ================= BACKEND =================
 
-      - name: Build backend image
+      - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
-            context: ./backend
-            push: true
-            tags: ${{ secrets.DOCKERHUB_USERNAME }}/mean-backend:latest
+          context: ./backend
+          push: true
+          tags: ${{ env.BACKEND_IMAGE }}:latest
 
       # ================= FRONTEND =================
 
-      - name: Push Frontend image
+      - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
-            context: ./frontend
-            push: true
-            tags: ${{ secrets.DOCKERHUB_USERNAME }}/mean-frontend:latest
+          context: ./frontend
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE }}:latest
+
+      # ================= COPY COMPOSE =================
+
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "~/assis/crud-dd-task-mean-app"
 
       # ================= DEPLOY =================
 
@@ -56,16 +68,19 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "🚀 Starting deployment..."
+
             cd ~/assis/crud-dd-task-mean-app
 
             echo "Pulling latest images..."
-            docker-compose pull
+            docker compose pull
 
-            docker-compose down
+            echo "Stopping old containers..."
+            docker compose down
 
-            echo "Restarting containers..."
-            docker-compose up -d --remove-orphans
+            echo "Starting new containers..."
+            docker compose up -d --remove-orphans
 
-            echo "Cleanup old images..."
+            echo "Cleaning unused images..."
             docker image prune -f
+
             echo "✅ Deployment completed"
