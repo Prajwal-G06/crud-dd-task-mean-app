@@ -69,7 +69,7 @@ jobs:
           script: |
             echo "🚀 Starting deployment..."
 
-            cd ~/assis/crud-dd-task-mean-app
+            cd ~/devops-assessment
 
             echo "Pulling latest images..."
             docker compose pull
