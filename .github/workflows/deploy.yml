@@ -56,7 +56,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker-compose.yml"
-          target: "~/assis/crud-dd-task-mean-app"
+          target: "~/devops-assessment"
 
       # ================= DEPLOY =================
 
@@ -72,13 +72,13 @@ jobs:
             cd ~/devops-assessment
 
             echo "Pulling latest images..."
-            docker compose pull
+            docker-compose pull
 
             echo "Stopping old containers..."
-            docker compose down
+            docker-compose down
 
             echo "Starting new containers..."
-            docker compose up -d --remove-orphans
+            docker-compose up -d --remove-orphans
 
             echo "Cleaning unused images..."
             docker image prune -f
